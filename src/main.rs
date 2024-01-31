@@ -1,10 +1,16 @@
 use std::{
+    env,
     fs::File,
     io::{self, BufRead, BufReader},
     thread, time,
 };
 
+use dotenv::dotenv;
 use libmozaik_iot::{protect, DeviceState, ProtectionAlgorithm};
+
+use types::IngestMetricEvent;
+
+pub mod types;
 
 /*
 dataset_description.txt
@@ -22,7 +28,11 @@ To convert number x to the desired format, compute f(x) = floor(x . 2^16). In ot
 Further, the resulting 32-bit integer is encoded in 4 bytes, starting with the least significant byte.
 */
 
-fn main() -> io::Result<()> {
+#[tokio::main]
+async fn main() -> io::Result<()> {
+    dotenv().ok();
+
+    // TODO: nonce + key
     let nonce = [
         0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0xff, 0xff, 0xff, 0xff,
     ]; // this should be a fresh nonce
@@ -33,7 +43,7 @@ fn main() -> io::Result<()> {
 
     let mut state = DeviceState::new(nonce, key);
 
-    const USER_ID: &str = "e7514b7a-9293-4c83-b733-a53e0e449635";
+    let user_id: String = env::var("USER_ID").unwrap();
 
     let dataset = File::open("../ecg_dataset.txt")?;
     let dataset_buff_reader = BufReader::new(dataset);
@@ -54,33 +64,56 @@ fn main() -> io::Result<()> {
         panic!("Cannot read sample length.");
     };
 
+    let http_client = reqwest::Client::new();
+    let mozaik_obelisk_endpoint = env::var("MOZAIK_OBELISK_ENDPOINT").unwrap();
+
     // Iterate over each sample in the dataset
-    for sample in line_iterator {
-        // Convert each `f64` data point from the sample to a fixed-point with 16 bit precision `i32`, which is then encoded in a little endian 4 byte array
-        let sample_data_points: Vec<[u8; 4]> = sample?
+    for sample_line in line_iterator {
+        /*
+         * - Split sample line on whitespace
+         * - Try to parse each data point to `f64`
+         * - Convert each `f64` (floating-point) data point to a fixed-point `i32` with 16 bit precision
+         * - Convert `i32` to little endian 4 byte array representation
+         * - Flatten 4 byte array to 4 byte values
+         */
+        let sample: Vec<u8> = sample_line?
             .split_whitespace()
             .filter_map(|data_point| data_point.parse::<f64>().ok())
             // 65536.0 = 2^16 -> 16 bit fixed-point precision
-            .map(|data_point| ((data_point * 65536.0).floor() as i32).to_le_bytes())
+            .flat_map(|data_point| ((data_point * 65536.0).floor() as i32).to_le_bytes())
             .collect();
 
-        println!("{:02X?}\n", &sample_data_points);
+        println!("Sample: {:02X?}\n", &sample);
 
-        // Encrypt each data point from this sample
-        let ct_sample_data_points: Vec<Vec<u8>> = sample_data_points
-            .iter()
-            .filter_map(|data_point| {
-                protect(
-                    USER_ID,
-                    &mut state,
-                    ProtectionAlgorithm::AesGcm128,
-                    data_point,
-                )
-                .ok()
-            })
-            .collect();
+        // Encrypt the sample
+        let Ok(ct_sample) = protect(
+            &user_id,
+            &mut state,
+            ProtectionAlgorithm::AesGcm128,
+            &sample,
+        ) else {
+            panic!("Sample encryption error. Sample: {:02X?}", &sample);
+        };
 
-        println!("{:02X?}", &ct_sample_data_points);
+        println!("CT sample: {:02X?}\n\n", &ct_sample);
+
+        let res = http_client
+            .post(format!(
+                "{mozaik_obelisk_endpoint}/obelisk/ingest/datasetId"
+            ))
+            .json(&vec![IngestMetricEvent {
+                timestamp: None,
+                metric: "ECG".into(),
+                value: ct_sample,
+                source: None,
+                tags: None,
+                location: None,
+                elevation: None,
+            }])
+            .send()
+            .await;
+
+        println!("{:#?}", res);
 
         thread::sleep(time::Duration::from_secs(15));
     }
