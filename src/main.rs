@@ -1,14 +1,19 @@
 use std::{
     env,
+    error::Error,
     fs::File,
-    io::{self, BufRead, BufReader},
+    io::{BufRead, BufReader},
     thread, time,
 };
 
+use client_auth::AuthToken;
 use dotenv::dotenv;
 use libmozaik_iot::{protect, DeviceState, ProtectionAlgorithm};
 
+use reqwest::header::DATE;
 use types::IngestMetricEvent;
+
+use crate::types::CipherTextValue;
 
 pub mod types;
 
@@ -29,21 +34,36 @@ Further, the resulting 32-bit integer is encoded in 4 bytes, starting with the l
 */
 
 #[tokio::main]
-async fn main() -> io::Result<()> {
+async fn main() -> Result<(), Box<dyn Error>> {
+    // Env
     dotenv().ok();
+    let ingest_endpoint = env::var("INGEST_ENDPOINT").unwrap();
 
-    // TODO: nonce + key
+    let client_id = env::var("CLIENT_ID").unwrap();
+    let client_secret = env::var("CLIENT_SECRET").unwrap();
+    let auth_endpoint = env::var("AUTH_ENDPOINT").unwrap();
+    let token_endpoint = env::var("TOKEN_ENDPOINT").unwrap();
+
+    // Auth token
+    let mut auth_token = AuthToken::new(
+        client_id.clone(),
+        client_secret,
+        auth_endpoint,
+        token_endpoint,
+    )
+    .await;
+
+    // nonce + key
     let nonce = [
-        0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0xff, 0xff, 0xff, 0xff,
+        0x73, 0x3f, 0x77, 0x3e, 0x1d, 0x5f, 0xa3, 0xdf, 0x5e, 0x05, 0x6b, 0xf5,
     ]; // this should be a fresh nonce
+
     let key = [
-        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
-        0x10,
+        0x8a, 0x47, 0xc0, 0x45, 0x16, 0x7b, 0x1a, 0xd4, 0x49, 0x46, 0x85, 0xa5, 0x20, 0xd0, 0xd6,
+        0x9e,
     ]; // this should be a fresh device key
 
     let mut state = DeviceState::new(nonce, key);
-
-    let user_id: String = env::var("USER_ID").unwrap();
 
     let dataset = File::open("../ecg_dataset.txt")?;
     let dataset_buff_reader = BufReader::new(dataset);
@@ -65,10 +85,9 @@ async fn main() -> io::Result<()> {
     };
 
     let http_client = reqwest::Client::new();
-    let mozaik_obelisk_endpoint = env::var("MOZAIK_OBELISK_ENDPOINT").unwrap();
 
     // Iterate over each sample in the dataset
-    for sample_line in line_iterator {
+    for (i, sample_line) in line_iterator.enumerate() {
         /*
          * - Split sample line on whitespace
          * - Try to parse each data point to `f64`
@@ -83,11 +102,11 @@ async fn main() -> io::Result<()> {
             .flat_map(|data_point| ((data_point * 65536.0).floor() as i32).to_le_bytes())
             .collect();
 
-        println!("Sample: {:02X?}\n", &sample);
+        // println!("Sample: {:02X?}\n", &sample);
 
         // Encrypt the sample
         let Ok(ct_sample) = protect(
-            &user_id,
+            &client_id,
             &mut state,
             ProtectionAlgorithm::AesGcm128,
             &sample,
@@ -95,27 +114,27 @@ async fn main() -> io::Result<()> {
             panic!("Sample encryption error. Sample: {:02X?}", &sample);
         };
 
-        println!("CT sample: {:02X?}\n\n", &ct_sample);
+        // println!("C sample: {:02X?}", &ct_sample);
 
         let res = http_client
-            .post(format!(
-                "{mozaik_obelisk_endpoint}/obelisk/ingest/datasetId"
-            ))
+            .post(&ingest_endpoint)
+            .bearer_auth(auth_token.token().await)
             .json(&vec![IngestMetricEvent {
-                timestamp: None,
-                metric: "ECG".into(),
-                value: ct_sample,
-                source: None,
-                tags: None,
-                location: None,
-                elevation: None,
+                metric: "ecg_test::json".into(),
+                value: CipherTextValue { c: ct_sample },
+                source: Some("IoT Device Simulator".into()),
             }])
             .send()
-            .await;
+            .await?;
 
-        println!("{:#?}", res);
+        println!(
+            "Sample {} ingested at {}: {}\n\n",
+            i,
+            res.headers()[DATE].to_str().unwrap(),
+            res.status()
+        );
 
-        thread::sleep(time::Duration::from_secs(15));
+        thread::sleep(time::Duration::from_millis(500));
     }
 
     Ok(())

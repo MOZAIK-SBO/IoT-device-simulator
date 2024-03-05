@@ -1,0 +1,309 @@
+❯ date
+Tue  5 Mar 17:23:00 CET 2024
+❯ cargo run --release
+    Finished release [optimized] target(s) in 0.04s
+     Running `target/release/iot-device-simulator`
+Amount of samples: 21892.
+Sample length: 187.
+Sample 0 ingested at Tue, 05 Mar 2024 16:23:05 GMT: 204 No Content
+
+
+Sample 1 ingested at Tue, 05 Mar 2024 16:23:05 GMT: 204 No Content
+
+
+Sample 2 ingested at Tue, 05 Mar 2024 16:23:06 GMT: 204 No Content
+
+
+Sample 3 ingested at Tue, 05 Mar 2024 16:23:06 GMT: 204 No Content
+
+
+Sample 4 ingested at Tue, 05 Mar 2024 16:23:07 GMT: 204 No Content
+
+
+Sample 5 ingested at Tue, 05 Mar 2024 16:23:07 GMT: 204 No Content
+
+
+Sample 6 ingested at Tue, 05 Mar 2024 16:23:08 GMT: 204 No Content
+
+
+Sample 7 ingested at Tue, 05 Mar 2024 16:23:08 GMT: 204 No Content
+
+
+Sample 8 ingested at Tue, 05 Mar 2024 16:23:09 GMT: 204 No Content
+
+
+Sample 9 ingested at Tue, 05 Mar 2024 16:23:09 GMT: 204 No Content
+
+
+Sample 10 ingested at Tue, 05 Mar 2024 16:23:10 GMT: 204 No Content
+
+
+Sample 11 ingested at Tue, 05 Mar 2024 16:23:10 GMT: 204 No Content
+
+
+Sample 12 ingested at Tue, 05 Mar 2024 16:23:11 GMT: 204 No Content
+
+
+Sample 13 ingested at Tue, 05 Mar 2024 16:23:11 GMT: 204 No Content
+
+
+Sample 14 ingested at Tue, 05 Mar 2024 16:23:12 GMT: 204 No Content
+
+
+Sample 15 ingested at Tue, 05 Mar 2024 16:23:12 GMT: 204 No Content
+
+
+Sample 16 ingested at Tue, 05 Mar 2024 16:23:13 GMT: 204 No Content
+
+
+Sample 17 ingested at Tue, 05 Mar 2024 16:23:13 GMT: 204 No Content
+
+
+Sample 18 ingested at Tue, 05 Mar 2024 16:23:14 GMT: 204 No Content
+
+
+Sample 19 ingested at Tue, 05 Mar 2024 16:23:14 GMT: 204 No Content
+
+
+Sample 20 ingested at Tue, 05 Mar 2024 16:23:15 GMT: 204 No Content
+
+
+Sample 21 ingested at Tue, 05 Mar 2024 16:23:15 GMT: 204 No Content
+
+
+Sample 22 ingested at Tue, 05 Mar 2024 16:23:16 GMT: 204 No Content
+
+
+Sample 23 ingested at Tue, 05 Mar 2024 16:23:17 GMT: 204 No Content
+
+
+Sample 24 ingested at Tue, 05 Mar 2024 16:23:17 GMT: 204 No Content
+
+
+Sample 25 ingested at Tue, 05 Mar 2024 16:23:18 GMT: 204 No Content
+
+
+Sample 26 ingested at Tue, 05 Mar 2024 16:23:18 GMT: 204 No Content
+
+
+Sample 27 ingested at Tue, 05 Mar 2024 16:23:19 GMT: 204 No Content
+
+
+Sample 28 ingested at Tue, 05 Mar 2024 16:23:19 GMT: 204 No Content
+
+
+Sample 29 ingested at Tue, 05 Mar 2024 16:23:20 GMT: 204 No Content
+
+
+Sample 30 ingested at Tue, 05 Mar 2024 16:23:20 GMT: 204 No Content
+
+
+Sample 31 ingested at Tue, 05 Mar 2024 16:23:21 GMT: 204 No Content
+
+
+Sample 32 ingested at Tue, 05 Mar 2024 16:23:21 GMT: 204 No Content
+
+
+Sample 33 ingested at Tue, 05 Mar 2024 16:23:22 GMT: 204 No Content
+
+
+Sample 34 ingested at Tue, 05 Mar 2024 16:23:22 GMT: 204 No Content
+
+
+Sample 35 ingested at Tue, 05 Mar 2024 16:23:23 GMT: 204 No Content
+
+
+Sample 36 ingested at Tue, 05 Mar 2024 16:23:23 GMT: 204 No Content
+
+
+Sample 37 ingested at Tue, 05 Mar 2024 16:23:24 GMT: 204 No Content
+
+
+Sample 38 ingested at Tue, 05 Mar 2024 16:23:24 GMT: 204 No Content
+
+
+Sample 39 ingested at Tue, 05 Mar 2024 16:23:25 GMT: 204 No Content
+
+
+Sample 40 ingested at Tue, 05 Mar 2024 16:23:25 GMT: 204 No Content
+
+
+Sample 41 ingested at Tue, 05 Mar 2024 16:23:26 GMT: 204 No Content
+
+
+Sample 42 ingested at Tue, 05 Mar 2024 16:23:26 GMT: 204 No Content
+
+
+Sample 43 ingested at Tue, 05 Mar 2024 16:23:27 GMT: 204 No Content
+
+
+Sample 44 ingested at Tue, 05 Mar 2024 16:23:27 GMT: 204 No Content
+
+
+Sample 45 ingested at Tue, 05 Mar 2024 16:23:28 GMT: 204 No Content
+
+
+Sample 46 ingested at Tue, 05 Mar 2024 16:23:28 GMT: 204 No Content
+
+
+Sample 47 ingested at Tue, 05 Mar 2024 16:23:29 GMT: 204 No Content
+
+
+Sample 48 ingested at Tue, 05 Mar 2024 16:23:29 GMT: 204 No Content
+
+
+Sample 49 ingested at Tue, 05 Mar 2024 16:23:30 GMT: 204 No Content
+
+
+Sample 50 ingested at Tue, 05 Mar 2024 16:23:31 GMT: 204 No Content
+
+
+Sample 51 ingested at Tue, 05 Mar 2024 16:23:31 GMT: 204 No Content
+
+
+Sample 52 ingested at Tue, 05 Mar 2024 16:23:32 GMT: 204 No Content
+
+
+Sample 53 ingested at Tue, 05 Mar 2024 16:23:32 GMT: 204 No Content
+
+
+Sample 54 ingested at Tue, 05 Mar 2024 16:23:33 GMT: 204 No Content
+
+
+Sample 55 ingested at Tue, 05 Mar 2024 16:23:33 GMT: 204 No Content
+
+
+Sample 56 ingested at Tue, 05 Mar 2024 16:23:34 GMT: 204 No Content
+
+
+Sample 57 ingested at Tue, 05 Mar 2024 16:23:34 GMT: 204 No Content
+
+
+Sample 58 ingested at Tue, 05 Mar 2024 16:23:35 GMT: 204 No Content
+
+
+Sample 59 ingested at Tue, 05 Mar 2024 16:23:35 GMT: 204 No Content
+
+
+Sample 60 ingested at Tue, 05 Mar 2024 16:23:36 GMT: 204 No Content
+
+
+Sample 61 ingested at Tue, 05 Mar 2024 16:23:36 GMT: 204 No Content
+
+
+Sample 62 ingested at Tue, 05 Mar 2024 16:23:37 GMT: 204 No Content
+
+
+Sample 63 ingested at Tue, 05 Mar 2024 16:23:37 GMT: 204 No Content
+
+
+Sample 64 ingested at Tue, 05 Mar 2024 16:23:38 GMT: 204 No Content
+
+
+Sample 65 ingested at Tue, 05 Mar 2024 16:23:38 GMT: 204 No Content
+
+
+Sample 66 ingested at Tue, 05 Mar 2024 16:23:39 GMT: 204 No Content
+
+
+Sample 67 ingested at Tue, 05 Mar 2024 16:23:39 GMT: 204 No Content
+
+
+Sample 68 ingested at Tue, 05 Mar 2024 16:23:40 GMT: 204 No Content
+
+
+Sample 69 ingested at Tue, 05 Mar 2024 16:23:40 GMT: 204 No Content
+
+
+Sample 70 ingested at Tue, 05 Mar 2024 16:23:41 GMT: 204 No Content
+
+
+Sample 71 ingested at Tue, 05 Mar 2024 16:23:41 GMT: 204 No Content
+
+
+Sample 72 ingested at Tue, 05 Mar 2024 16:23:42 GMT: 204 No Content
+
+
+Sample 73 ingested at Tue, 05 Mar 2024 16:23:42 GMT: 204 No Content
+
+
+Sample 74 ingested at Tue, 05 Mar 2024 16:23:43 GMT: 204 No Content
+
+
+Sample 75 ingested at Tue, 05 Mar 2024 16:23:44 GMT: 204 No Content
+
+
+Sample 76 ingested at Tue, 05 Mar 2024 16:23:44 GMT: 204 No Content
+
+
+Sample 77 ingested at Tue, 05 Mar 2024 16:23:45 GMT: 204 No Content
+
+
+Sample 78 ingested at Tue, 05 Mar 2024 16:23:45 GMT: 204 No Content
+
+
+Sample 79 ingested at Tue, 05 Mar 2024 16:23:46 GMT: 204 No Content
+
+
+Sample 80 ingested at Tue, 05 Mar 2024 16:23:46 GMT: 204 No Content
+
+
+Sample 81 ingested at Tue, 05 Mar 2024 16:23:47 GMT: 204 No Content
+
+
+Sample 82 ingested at Tue, 05 Mar 2024 16:23:47 GMT: 204 No Content
+
+
+Sample 83 ingested at Tue, 05 Mar 2024 16:23:48 GMT: 204 No Content
+
+
+Sample 84 ingested at Tue, 05 Mar 2024 16:23:48 GMT: 204 No Content
+
+
+Sample 85 ingested at Tue, 05 Mar 2024 16:23:49 GMT: 204 No Content
+
+
+Sample 86 ingested at Tue, 05 Mar 2024 16:23:49 GMT: 204 No Content
+
+
+Sample 87 ingested at Tue, 05 Mar 2024 16:23:50 GMT: 204 No Content
+
+
+Sample 88 ingested at Tue, 05 Mar 2024 16:23:50 GMT: 204 No Content
+
+
+Sample 89 ingested at Tue, 05 Mar 2024 16:23:51 GMT: 204 No Content
+
+
+Sample 90 ingested at Tue, 05 Mar 2024 16:23:51 GMT: 204 No Content
+
+
+Sample 91 ingested at Tue, 05 Mar 2024 16:23:52 GMT: 204 No Content
+
+
+Sample 92 ingested at Tue, 05 Mar 2024 16:23:52 GMT: 204 No Content
+
+
+Sample 93 ingested at Tue, 05 Mar 2024 16:23:53 GMT: 204 No Content
+
+
+Sample 94 ingested at Tue, 05 Mar 2024 16:23:53 GMT: 204 No Content
+
+
+Sample 95 ingested at Tue, 05 Mar 2024 16:23:54 GMT: 204 No Content
+
+
+Sample 96 ingested at Tue, 05 Mar 2024 16:23:54 GMT: 204 No Content
+
+
+Sample 97 ingested at Tue, 05 Mar 2024 16:23:55 GMT: 204 No Content
+
+
+Sample 98 ingested at Tue, 05 Mar 2024 16:23:55 GMT: 204 No Content
+
+
+Sample 99 ingested at Tue, 05 Mar 2024 16:23:56 GMT: 204 No Content
+
+
+Sample 100 ingested at Tue, 05 Mar 2024 16:23:57 GMT: 204 No Content
+
