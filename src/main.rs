@@ -31,6 +31,11 @@ Conversion to representation needed for computing in MPC:
 In MPC we work in integer arithmetic, with fixed-point representation. For now we will fix the fixed-point precision to 16 bits, and the integer part will be represented by 16 bits as well.
 To convert number x to the desired format, compute f(x) = floor(x . 2^16). In other words, the input is multiplied by 2^f, where f denotes the fixed-point precision. Afterwards, a floor function is applied, a floor function in this case means rounding down to the nearest integer (= cutting the decimal part off).
 Further, the resulting 32-bit integer is encoded in 4 bytes, starting with the least significant byte.
+
+8-bit precision:
+In MPC we work in integer arithmetic, with fixed-point representation. For now we will fix the fixed-point precision to 8 bits, and the integer part will be represented by 8 bits as well.
+To convert number x to the desired format, compute f(x) = floor(x . 2^8). In other words, the input is multiplied by 2^f, where f denotes the fixed-point precision. Afterwards, a floor function is applied, a floor function in this case means rounding down to the nearest integer (= cutting the decimal part off).
+Further, the resulting 16-bit integer is encoded in 2 bytes, starting with the least significant byte.
 */
 
 #[tokio::main]
@@ -70,16 +75,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let mut line_iterator = dataset_buff_reader.lines();
 
-    let _x_samples = if let Some(Ok(x)) = line_iterator.next() {
+    if let Some(Ok(x)) = line_iterator.next() {
         println!("Amount of samples: {}.", &x);
-        x
     } else {
         panic!("Cannot read amount of samples.");
     };
 
-    let _y_sample_length = if let Some(Ok(y)) = line_iterator.next() {
+    if let Some(Ok(y)) = line_iterator.next() {
         println!("Sample length: {}.", &y);
-        y
     } else {
         panic!("Cannot read sample length.");
     };
@@ -91,18 +94,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
         /*
          * - Split sample line on whitespace
          * - Try to parse each data point to `f64`
-         * - Convert each `f64` (floating-point) data point to a fixed-point `i32` with 16 bit precision
-         * - Convert `i32` to little endian 4 byte array representation
-         * - Flatten 4 byte array to 4 byte values
+         * - Convert each `f64` (floating-point) data point to a fixed-point `i16` with 8 bit precision
+         * - Convert `i16` to little endian 2 byte array representation
+         * - Flatten 2 byte array to 2 byte values
+         * - Collect all the 2 byte values for each data point and add them to one array
          */
         let sample: Vec<u8> = sample_line?
             .split_whitespace()
             .filter_map(|data_point| data_point.parse::<f64>().ok())
-            // 65536.0 = 2^16 -> 16 bit fixed-point precision
-            .flat_map(|data_point| ((data_point * 65536.0).floor() as i32).to_le_bytes())
+            // 65536 = 2^16 -> 16 bit fixed-point precision (shift left 16 bits)
+            // 256 = 2^8 -> 8 bit fixed-point precision (shift left 8 bits)
+            .flat_map(|data_point| ((data_point * 256f64).floor() as i16).to_le_bytes())
             .collect();
 
-        // println!("Sample: {:02X?}\n", &sample);
+        // println!("Sample: {:02X?}", &sample);
+        // println!("Sample array size: {}\n", &sample.len());
 
         // Encrypt the sample
         let Ok(ct_sample) = protect(
@@ -128,13 +134,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .await?;
 
         println!(
-            "Sample {} ingested at {}: {}\n\n",
+            "Sample {} ingested at {}: {}",
             i,
             res.headers()[DATE].to_str().unwrap(),
             res.status()
         );
 
-        thread::sleep(time::Duration::from_millis(500));
+        thread::sleep(time::Duration::from_millis(1000));
     }
 
     Ok(())
