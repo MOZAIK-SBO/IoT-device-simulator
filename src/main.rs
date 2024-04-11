@@ -1,19 +1,18 @@
+use crate::types::{CipherTextValue, GatewayIngestMetricEvent};
+use clap::Parser;
+use client_auth::AuthToken;
+use dotenv::dotenv;
+use libmozaik_iot::{protect, DeviceState, ProtectionAlgorithm};
+use reqwest::{header::DATE, Response};
 use std::{
     env,
     error::Error,
     fs::File,
     io::{BufRead, BufReader},
-    thread, time,
+    thread,
+    time::{self, SystemTime, UNIX_EPOCH},
 };
-
-use client_auth::AuthToken;
-use dotenv::dotenv;
-use libmozaik_iot::{protect, DeviceState, ProtectionAlgorithm};
-
-use reqwest::header::DATE;
 use types::IngestMetricEvent;
-
-use crate::types::CipherTextValue;
 
 pub mod types;
 
@@ -38,11 +37,31 @@ To convert number x to the desired format, compute f(x) = floor(x . 2^8). In oth
 Further, the resulting 16-bit integer is encoded in 2 bytes, starting with the least significant byte.
 */
 
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Whether to use the gateway or not. Default false.
+    #[arg(short, long, default_value_t = false)]
+    gateway: bool,
+
+    /// When using the gateway, is the gateway or the IoT device responsible for authenticating with MOZAIK? If this flag is present, the gateway will authenticate instead of the IoT device. Default false.
+    #[arg(short = 'a', long, default_value_t = false)]
+    gateway_authenticate: bool,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Args
+    let args = Args::parse();
+
     // Env
     dotenv().ok();
-    let ingest_endpoint = env::var("INGEST_ENDPOINT").unwrap();
+
+    let ingest_endpoint = if args.gateway {
+        env::var("GATEWAY_ENDPOINT").unwrap()
+    } else {
+        env::var("INGEST_ENDPOINT").unwrap()
+    };
 
     let client_id = env::var("CLIENT_ID").unwrap();
     let client_secret = env::var("CLIENT_SECRET").unwrap();
@@ -110,34 +129,63 @@ async fn main() -> Result<(), Box<dyn Error>> {
         // println!("Sample: {:02X?}", &sample);
         // println!("Sample array size: {}\n", &sample.len());
 
-        // Encrypt the sample
-        let Ok(ct_sample) = protect(
-            &client_id,
-            &mut state,
-            ProtectionAlgorithm::AesGcm128,
-            &sample,
-        ) else {
-            panic!("Sample encryption error. Sample: {:02X?}", &sample);
-        };
+        let res: Response;
 
-        // println!("C sample: {:02X?}", &ct_sample);
+        // Encrypt on IoT device
+        if !args.gateway {
+            // Encrypt the sample
+            let Ok(ct_sample) = protect(
+                &client_id,
+                &mut state,
+                ProtectionAlgorithm::AesGcm128,
+                &sample,
+            ) else {
+                panic!("Sample encryption error. Sample: {:02X?}", &sample);
+            };
 
-        let res = http_client
-            .post(&ingest_endpoint)
-            .bearer_auth(auth_token.token().await)
-            .json(&vec![IngestMetricEvent {
-                metric: "ecg_test::json".into(),
-                value: CipherTextValue { c: ct_sample },
-                source: Some("IoT Device Simulator".into()),
-            }])
-            .send()
-            .await?;
+            // println!("C sample: {:02X?}", &ct_sample);
+
+            res = http_client
+                .post(&ingest_endpoint)
+                .bearer_auth(auth_token.token().await)
+                .json(&vec![IngestMetricEvent {
+                    metric: "ecg_test::json".into(),
+                    value: CipherTextValue { c: ct_sample },
+                    source: Some("IoT Device Simulator".into()),
+                }])
+                .send()
+                .await?;
+        } else if args.gateway_authenticate {
+            res = http_client
+                .post(&ingest_endpoint)
+                .json(&GatewayIngestMetricEvent {
+                    timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis(),
+                    metric: "ecg_test::json".into(),
+                    value: sample,
+                    source: Some("[GW] IoT Device Simulator".into()),
+                })
+                .send()
+                .await?;
+        } else {
+            res = http_client
+                .post(&ingest_endpoint)
+                .bearer_auth(auth_token.token().await)
+                .json(&GatewayIngestMetricEvent {
+                    timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis(),
+                    metric: "ecg_test::json".into(),
+                    value: sample,
+                    source: Some("[GW] IoT Device Simulator".into()),
+                })
+                .send()
+                .await?;
+        }
 
         println!(
-            "Sample {} ingested at {}: {}",
+            "Sample {} ingested at {}: {}, via {}",
             i,
             res.headers()[DATE].to_str().unwrap(),
-            res.status()
+            res.status(),
+            if args.gateway { "gateway" } else { "MOZAIK" }
         );
 
         thread::sleep(time::Duration::from_millis(1000));
