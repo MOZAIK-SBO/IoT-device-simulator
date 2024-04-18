@@ -26,15 +26,10 @@ The second line of the file contains an integer Y representing the vector length
 From the third line onwards the samples are listed, separated by a line break (each sample is written in a new line). Hence, the file contains X samples of length Y, each in a new line.
  - each sample corresponds to a vector of Y numbers in floating point representation, separated by a space (" ").
 
-Conversion to representation needed for computing in MPC:
-In MPC we work in integer arithmetic, with fixed-point representation. For now we will fix the fixed-point precision to 16 bits, and the integer part will be represented by 16 bits as well.
-To convert number x to the desired format, compute f(x) = floor(x . 2^16). In other words, the input is multiplied by 2^f, where f denotes the fixed-point precision. Afterwards, a floor function is applied, a floor function in this case means rounding down to the nearest integer (= cutting the decimal part off).
-Further, the resulting 32-bit integer is encoded in 4 bytes, starting with the least significant byte.
-
-8-bit precision:
-In MPC we work in integer arithmetic, with fixed-point representation. For now we will fix the fixed-point precision to 8 bits, and the integer part will be represented by 8 bits as well.
-To convert number x to the desired format, compute f(x) = floor(x . 2^8). In other words, the input is multiplied by 2^f, where f denotes the fixed-point precision. Afterwards, a floor function is applied, a floor function in this case means rounding down to the nearest integer (= cutting the decimal part off).
-Further, the resulting 16-bit integer is encoded in 2 bytes, starting with the least significant byte.
+ Conversion to representation needed for computing in MPC:
+ In MPC we work in integer arithmetic, with fixed-point representation. For now we will fix the fixed-point precision to 8 bits, and the integer part will be represented by the remaining 56 bits.
+ To convert number x to the desired format, compute f(x) = floor(x . 2^8). In other words, the input is multiplied by 2^f, where f denotes the fixed-point precision. Afterwards, a floor function is applied, a floor function in this case means rounding down to the nearest integer (= cutting the decimal part off).
+ Further, the resulting 64-bit integer is encoded in 8 bytes in little-endian format with the least significant byte representing the decimal part.
 */
 
 #[derive(Parser, Debug)]
@@ -113,17 +108,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
         /*
          * - Split sample line on whitespace
          * - Try to parse each data point to `f64`
-         * - Convert each `f64` (floating-point) data point to a fixed-point `i16` with 8 bit precision
-         * - Convert `i16` to little endian 2 byte array representation
-         * - Flatten 2 byte array to 2 byte values
-         * - Collect all the 2 byte values for each data point and add them to one array
+         * - Convert each `f64` (floating-point) data point to a fixed-point `i64` with 8 bit precision
+         * - Convert `i64` to little endian 8 byte array representation
+         * - Flatten 8 byte array to 8 byte values
+         * - Collect all the 8 byte values for each data point and add them to one array
          */
         let sample: Vec<u8> = sample_line?
             .split_whitespace()
             .filter_map(|data_point| data_point.parse::<f64>().ok())
-            // 65536 = 2^16 -> 16 bit fixed-point precision (shift left 16 bits)
             // 256 = 2^8 -> 8 bit fixed-point precision (shift left 8 bits)
-            .flat_map(|data_point| ((data_point * 256f64).floor() as i16).to_le_bytes())
+            .flat_map(|data_point| ((data_point * 256f64).floor() as i64).to_le_bytes())
             .collect();
 
         // println!("Sample: {:02X?}", &sample);
@@ -162,7 +156,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis(),
                     metric: "ecg_test::json".into(),
                     value: sample,
-                    source: Some("[GW] IoT Device Simulator".into()),
+                    source: Some("IoT Device Simulator".into()),
                 })
                 .send()
                 .await?;
@@ -174,7 +168,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis(),
                     metric: "ecg_test::json".into(),
                     value: sample,
-                    source: Some("[GW] IoT Device Simulator".into()),
+                    source: Some("IoT Device Simulator".into()),
                 })
                 .send()
                 .await?;
