@@ -7,8 +7,8 @@ use reqwest::{header::DATE, Response};
 use std::{
     env,
     error::Error,
-    fs::File,
-    io::{BufRead, BufReader},
+    fs::{File, OpenOptions},
+    io::{BufRead, BufReader, Write},
     thread,
     time::{self, SystemTime, UNIX_EPOCH},
 };
@@ -42,6 +42,14 @@ struct Args {
     /// When using the gateway, is the gateway or the IoT device responsible for authenticating with MOZAIK? If this flag is present, the gateway will authenticate instead of the IoT device. Default false.
     #[arg(short = 'a', long, default_value_t = false)]
     gateway_authenticate: bool,
+
+    /// Time between ingestion in milliseconds
+    #[arg(short, long, default_value_t = 1000)]
+    interval: u64,
+
+    /// Limit amount of samples to ingest
+    #[arg(short, long, default_value_t = 1000)]
+    count: u128,
 }
 
 #[tokio::main]
@@ -103,8 +111,33 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let http_client = reqwest::Client::new();
 
+    let bench_file_path = format!(
+        "ingest_int-{}ms_c-{}_ingest-{}_auth-{}_time-{}.txt",
+        args.interval,
+        args.count,
+        if args.gateway { "gateway" } else { "iot" },
+        if args.gateway_authenticate {
+            "gateway"
+        } else {
+            "iot"
+        },
+        SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis()
+    );
+
+    let mut bench_file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(bench_file_path)?;
+
+    writeln!(
+        bench_file,
+        "sample_read_micros,sample_encrypt_micros,sample_ingest_micros"
+    )?;
+
     // Iterate over each sample in the dataset
     for (i, sample_line) in line_iterator.enumerate() {
+        let mut start_time = SystemTime::now();
+
         /*
          * - Split sample line on whitespace
          * - Try to parse each data point to `f64`
@@ -125,6 +158,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         let res: Response;
 
+        // Time to read sample
+        write!(
+            bench_file,
+            "{},",
+            start_time
+                .elapsed()
+                .expect("error elapsed time")
+                .as_micros()
+        )?;
+        start_time = SystemTime::now();
+
         // Encrypt on IoT device
         if !args.gateway {
             // Encrypt the sample
@@ -136,6 +180,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
             ) else {
                 panic!("Sample encryption error. Sample: {:02X?}", &sample);
             };
+
+            // Time to encrypt sample
+            write!(
+                bench_file,
+                "{},",
+                start_time
+                    .elapsed()
+                    .expect("error elapsed time")
+                    .as_micros()
+            )?;
+            start_time = SystemTime::now();
 
             // println!("C sample: {:02X?}", &ct_sample);
 
@@ -150,6 +205,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .send()
                 .await?;
         } else if args.gateway_authenticate {
+            // Time to get here since reading sample (should be close to 0 since no encryption happens here)
+            write!(
+                bench_file,
+                "{},",
+                start_time
+                    .elapsed()
+                    .expect("error elapsed time")
+                    .as_micros()
+            )?;
+            start_time = SystemTime::now();
+
             res = http_client
                 .post(&ingest_endpoint)
                 .json(&GatewayIngestMetricEvent {
@@ -161,6 +227,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .send()
                 .await?;
         } else {
+            // Time to get here since reading sample (should be close to 0 since no encryption happens here)
+            write!(
+                bench_file,
+                "{},",
+                start_time
+                    .elapsed()
+                    .expect("error elapsed time")
+                    .as_micros()
+            )?;
+            start_time = SystemTime::now();
+
             res = http_client
                 .post(&ingest_endpoint)
                 .bearer_auth(auth_token.token().await)
@@ -174,6 +251,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .await?;
         }
 
+        // Time for ingestion
+        writeln!(
+            bench_file,
+            "{}",
+            start_time
+                .elapsed()
+                .expect("error elapsed time")
+                .as_micros()
+        )?;
+
         println!(
             "Sample {} ingested at {}: {}, via {}",
             i,
@@ -182,7 +269,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
             if args.gateway { "gateway" } else { "MOZAIK" }
         );
 
-        thread::sleep(time::Duration::from_millis(1000));
+        if i + 1 >= args.count.try_into().unwrap() {
+            break;
+        }
+
+        thread::sleep(time::Duration::from_millis(args.interval));
     }
 
     Ok(())
